@@ -1,0 +1,56 @@
+name: UMI XNU Kernel Build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/umi-xnu-kernel.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 360
+    steps:
+      - name: Checkout UMI device repository
+        uses: actions/checkout@v4
+        with:
+          repository: reAAAq/UniXNU-umi
+          ref: ${{ github.sha }}
+          path: devices/umi
+          submodules: recursive
+      - name: Checkout pinned UniXNU
+        uses: actions/checkout@v4
+        with:
+          repository: UniXNU/UniXNU
+          ref: 7b52e7968c76453cdc18b5aa174fc368d5293b91
+          path: sources/UniXNU
+          submodules: recursive
+      - name: Select Xcode
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-path
+      - name: Install build dependencies
+        run: brew install cmake ninja unifdef llvm
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare workspace
+        run: |
+          cp -a devices/umi/tools ./tools
+          python -m pip install --upgrade pip
+          if [ -f sources/UniXNU/scripts/requirements.txt ]; then
+            python -m pip install -r sources/UniXNU/scripts/requirements.txt
+          fi
+      - name: Build source kernel
+        run: python tools/build_umi_xnu.py --stage all --jobs 4
+      - name: Upload build outputs and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umi-xnu-kernel-${{ github.run_number }}
+          path: out/umi-xnu/**
+          if-no-files-found: warn
+          retention-days: 7
