@@ -47,7 +47,7 @@ jobs:
           xcrun --sdk iphoneos --show-sdk-path
 
       - name: Install build dependencies
-        run: brew install cmake ninja unifdef llvm dtc mtools
+        run: brew install cmake ninja unifdef llvm dtc mtools acpica nasm
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -66,6 +66,13 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f sources/UniXNU/scripts/requirements.txt ]; then
             python -m pip install -r sources/UniXNU/scripts/requirements.txt
+          fi
+
+      - name: Install EDK2 Python requirements
+        run: |
+          if [ -f sources/uefi-umi/pip-requirements.txt ]; then
+            python -m pip install -r sources/uefi-umi/pip-requirements.txt || \
+              python -m pip install edk2-pytool-library edk2-pytool-extensions antlr4-python3-runtime pefile coloredlogs
           fi
 
       - name: Unpack committed evidence (if present)
