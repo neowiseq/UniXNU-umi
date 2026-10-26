@@ -115,12 +115,12 @@ jobs:
           SEED: ${{ secrets.UMI_UNIQUE_CHIP_ID }}
         run: |
           mkdir -p out/umi/adt
-          SEED_ARG=""
-          if [ -n "$SEED" ]; then SEED_ARG="--unique-chip-id $SEED"; fi
+          IDENTITY_ARG=""
+          if [ -n "$SEED" ]; then IDENTITY_ARG="--unique-chip-id $SEED --chip-id 0x164"; fi
           python devices/umi/scripts/make-umi-adt.py --output out/umi/adt/umi.adt \
             --dram-size 0x1FBB00000 --owned-memory-size 0x10000000 \
-            --chip-id 0x164 --cpu-regs 0,0x100,0x200,0x300,0x400,0x500,0x600,0x700 \
-            --psci-method smc $SEED_ARG
+            --cpu-regs 0,0x100,0x200,0x300,0x400,0x500,0x600,0x700 \
+            --psci-method smc $IDENTITY_ARG
           python - <<'PY'
           import json, hashlib
           from pathlib import Path
