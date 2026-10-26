@@ -59,6 +59,10 @@ jobs:
           mkdir -p tools
           # build_umi_uefi.py lives in bringup/tools, not the repo-root tools/
           cp -a devices/umi/bringup/tools/. ./tools/
+          # committed local inputs live inside the device checkout (devices/umi/)
+          if [ -d devices/umi/local-inputs ]; then
+            cp -a devices/umi/local-inputs ./local-inputs
+          fi
           python -m pip install --upgrade pip
           if [ -f sources/UniXNU/scripts/requirements.txt ]; then
             python -m pip install -r sources/UniXNU/scripts/requirements.txt
