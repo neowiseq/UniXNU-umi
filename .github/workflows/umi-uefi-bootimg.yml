@@ -130,6 +130,17 @@ jobs:
           Path("out/umi/xnu-entry-baseline.json").write_text(json.dumps({"kernel": {"kernel": str(k), "sha256": hashlib.sha256(k.read_bytes()).hexdigest()}}))
           PY
 
+      - name: Build UEFIExtract for FD verification
+        run: |
+          git clone --depth 1 https://github.com/LongSoft/UEFITool.git /tmp/uefitool-src
+          mkdir -p /tmp/uefi-build
+          cd /tmp/uefi-build
+          cmake /tmp/uefitool-src/UEFIExtract
+          make -j4
+          mkdir -p "$GITHUB_WORKSPACE/out/tools/uefiextract"
+          cp ./uefiextract "$GITHUB_WORKSPACE/out/tools/uefiextract/uefiextract"
+          "$GITHUB_WORKSPACE/out/tools/uefiextract/uefiextract" --version
+
       - name: Build UEFI firmware + boot image
         run: |
           python tools/build_umi_uefi.py \
