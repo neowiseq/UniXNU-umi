@@ -1,0 +1,88 @@
+name: UMI UEFI + boot.img Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 360
+    steps:
+      - name: Checkout UMI device repo (this fork)
+        uses: actions/checkout@v4
+        with:
+          path: devices/umi
+          submodules: recursive
+
+      - name: Checkout pinned UniXNU
+        uses: actions/checkout@v4
+        with:
+          repository: UniXNU/UniXNU
+          ref: 7b52e7968c76453cdc18b5aa174fc368d5293b91
+          path: sources/UniXNU
+          submodules: recursive
+
+      - name: Checkout pinned uefi-umi (with submodules)
+        uses: actions/checkout@v4
+        with:
+          repository: reAAAq/uefi-umi
+          ref: 48bc41218c480519bfd299c22205f44e418df9d0
+          path: sources/uefi-umi
+          submodules: recursive
+
+      - name: Select Xcode
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-path
+
+      - name: Install build dependencies
+        run: brew install cmake ninja unifdef llvm dtc mtools
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prepare workspace
+        run: |
+          cp -a devices/umi/tools ./tools
+          python -m pip install --upgrade pip
+          if [ -f sources/UniXNU/scripts/requirements.txt ]; then
+            python -m pip install -r sources/UniXNU/scripts/requirements.txt
+          fi
+
+      - name: Verify local inputs are present
+        run: |
+          test -f local-inputs/uefi-binaries/manifest.json || { echo "missing local-inputs/uefi-binaries"; exit 1; }
+          test -f local-inputs/evidence/report.json || { echo "missing local-inputs/evidence/report.json"; exit 1; }
+          test -f local-inputs/evidence/running.dtb || { echo "missing local-inputs/evidence/running.dtb"; exit 1; }
+          echo "inputs ok"
+
+      - name: Build source kernel
+        run: python tools/build_umi_xnu.py --stage all --jobs 4
+
+      - name: Build UEFI firmware + boot image
+        run: |
+          python tools/build_umi_uefi.py \
+            --firmware local-inputs \
+            --evidence local-inputs/evidence \
+            --display-profile inherited \
+            --input-profile buttons \
+            --payload-profile ram \
+            --loader-profile darwinboot \
+            -j 4
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umi-uefi-bootimg-${{ github.run_number }}
+          path: |
+            out/umi/
+            out/umi-xnu/**
+            sources/uefi-umi/Build/umiPkg/**/FV/SILICIUM_UEFI.fd
+          if-no-files-found: warn
+          retention-days: 7
