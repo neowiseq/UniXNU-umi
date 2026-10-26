@@ -2,6 +2,14 @@ name: UMI UEFI + boot.img Build
 
 on:
   workflow_dispatch:
+    inputs:
+      ram_check:
+        description: "payload (diagnostic) | xnu-entry (XNU kernel payload)"
+        default: payload
+        type: choice
+        options:
+          - payload
+          - xnu-entry
 
 permissions:
   contents: read
@@ -56,6 +64,13 @@ jobs:
             python -m pip install -r sources/UniXNU/scripts/requirements.txt
           fi
 
+      - name: Unpack committed evidence (if present)
+        run: |
+          if [ -f local-inputs/evidence.zip ]; then
+            mkdir -p local-inputs/evidence
+            unzip -o local-inputs/evidence.zip -d local-inputs/evidence
+          fi
+
       - name: Fetch evidence from release (optional)
         env:
           EVIDENCE_URL: ${{ secrets.UMI_EVIDENCE_URL }}
@@ -76,6 +91,27 @@ jobs:
       - name: Build source kernel
         run: python tools/build_umi_xnu.py --stage all --jobs 4
 
+      - name: Generate XNU baselines (xnu-entry only)
+        if: ${{ inputs.ram_check == 'xnu-entry' }}
+        env:
+          SEED: ${{ secrets.UMI_UNIQUE_CHIP_ID }}
+        run: |
+          mkdir -p out/umi/adt
+          SEED_ARG=""
+          if [ -n "$SEED" ]; then SEED_ARG="--unique-chip-id $SEED"; fi
+          python devices/umi/scripts/make-umi-adt.py --output out/umi/adt/umi.adt \
+            --dram-size 0x1FBB00000 --owned-memory-size 0x10000000 \
+            --chip-id 0x164 --cpu-regs 0,0x100,0x200,0x300,0x400,0x500,0x600,0x700 \
+            --psci-method smc $SEED_ARG
+          python - <<'PY'
+          import json, hashlib
+          from pathlib import Path
+          adt = Path("out/umi/adt/umi.adt").resolve()
+          Path("out/umi/adt-baseline.json").write_text(json.dumps({"output": str(adt), "adt_sha256": hashlib.sha256(adt.read_bytes()).hexdigest()}))
+          k = Path("out/umi-xnu/umi/kernel/source-kernel.macho").resolve()
+          Path("out/umi/xnu-entry-baseline.json").write_text(json.dumps({"kernel": {"kernel": str(k), "sha256": hashlib.sha256(k.read_bytes()).hexdigest()}}))
+          PY
+
       - name: Build UEFI firmware + boot image
         run: |
           python tools/build_umi_uefi.py \
@@ -85,6 +121,7 @@ jobs:
             --input-profile buttons \
             --payload-profile ram \
             --loader-profile darwinboot \
+            --ram-check ${{ inputs.ram_check }} \
             -j 4
 
       - name: Upload artifacts
