@@ -34,10 +34,13 @@ def device_tree(evidence):
     if identity["ro.product.device"] != "umi" or identity["ro.soc.model"] != "SM8250":
         raise ValueError("wrong device evidence")
     commandline = (evidence / "cmdline.txt").read_text()
-    for field, expected in (("dtb_idx", "0"), ("dtbo_idx", "11")):
-        found = re.search(rf"(?:^|\s)androidboot\.{field}=([^\s]+)", commandline)
-        if not found or found[1] != expected:
-            raise ValueError(f"unexpected observed {field}")
+    dtb_idx = re.search(r"(?:^|\s)androidboot\.dtb_idx=([^\s]+)", commandline)
+    if not dtb_idx or dtb_idx[1] != "0":
+        raise ValueError("unexpected observed dtb_idx")
+    dtbo_idx = re.search(r"(?:^|\s)androidboot\.dtbo_idx=([^\s]+)", commandline)
+    if not dtbo_idx:
+        raise ValueError("missing androidboot.dtbo_idx")
+    dtbo_idx = int(dtbo_idx[1])
     boot = verified(evidence, "boot.img", report["artifacts"]["boot.img"])
     dtbo = verified(evidence, "dtbo.img", report["artifacts"]["dtbo.img"])
     live = verified(evidence, "running.dtb", report["artifacts"]["running.dtb"])
@@ -46,15 +49,18 @@ def device_tree(evidence):
     size = struct.unpack_from(">I", payload, 4)[0]
     base = payload[:size]
     fdt_nodes(base)
-    entry = dtbo_entries(dtbo)["entries"][11]
+    entries = dtbo_entries(dtbo)["entries"]
+    if not 0 <= dtbo_idx < len(entries):
+        raise ValueError("dtbo_idx out of range")
+    entry = entries[dtbo_idx]
     overlay = dtbo[entry["file_offset"]:entry["file_offset"] + entry["bytes"]]
     out = ROOT / "out/umi/dtb"
     out.mkdir(parents=True, exist_ok=True)
     (out / "base0.dtb").write_bytes(base)
-    (out / "overlay11.dtbo").write_bytes(overlay)
+    (out / f"overlay{dtbo_idx}.dtbo").write_bytes(overlay)
     merged = out / "umi-merged.dtb"
     subprocess.run(["fdtoverlay", "-i", str(out / "base0.dtb"), "-o", str(merged),
-                    str(out / "overlay11.dtbo")], check=True)
+                    str(out / f"overlay{dtbo_idx}.dtbo")], check=True)
     actual, running = fdt_nodes(merged.read_bytes()), fdt_nodes(live)
     if actual["/"]["qcom,msm-id"] != running["/"]["qcom,msm-id"]:
         raise ValueError("merged SoC ID differs from observed live DT")
@@ -67,7 +73,7 @@ def device_tree(evidence):
         checked[path] = reg_ranges(actual, path)
     provenance = {
         "evidence": str(evidence), "boot_sha256": sha(boot), "dtbo_sha256": sha(dtbo),
-        "base_index": 0, "overlay_index": 11, "base_sha256": sha(base),
+        "base_index": 0, "overlay_index": dtbo_idx, "base_sha256": sha(base),
         "overlay_sha256": sha(overlay), "merged_sha256": sha(merged.read_bytes()),
         "checked_against_live": checked,
         "note": "Source DT + selected overlay, not the live DT. ABL runtime fixups remain untested.",
