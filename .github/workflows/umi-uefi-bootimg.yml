@@ -48,10 +48,22 @@ jobs:
 
       - name: Prepare workspace
         run: |
-          cp -a devices/umi/tools ./tools
+          mkdir -p tools
+          # build_umi_uefi.py lives in bringup/tools, not the repo-root tools/
+          cp -a devices/umi/bringup/tools/. ./tools/
           python -m pip install --upgrade pip
           if [ -f sources/UniXNU/scripts/requirements.txt ]; then
             python -m pip install -r sources/UniXNU/scripts/requirements.txt
+          fi
+
+      - name: Fetch evidence from release (optional)
+        env:
+          EVIDENCE_URL: ${{ secrets.UMI_EVIDENCE_URL }}
+        run: |
+          if [ -n "$EVIDENCE_URL" ]; then
+            mkdir -p local-inputs/evidence
+            curl -fL "$EVIDENCE_URL" -o /tmp/evidence.zip
+            unzip -o /tmp/evidence.zip -d local-inputs/evidence
           fi
 
       - name: Verify local inputs are present
