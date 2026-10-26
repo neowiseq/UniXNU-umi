@@ -1,0 +1,11 @@
+# Generated from this umi device's verified XBL; vendor bytes stay outside Git.
+[Defines]
+  INF_VERSION = 0x0001001B
+  BASE_NAME = ScmDxeLA
+  FILE_GUID = 2D7A83E3-E343-4FFB-9109-631F2EE11694
+  MODULE_TYPE = DXE_DRIVER
+  VERSION_STRING = 1.0
+
+[Binaries.AARCH64]
+  PE32|ScmDxeLA.efi|*
+  DXE_DEPEX|ScmDxeLA.depex|*

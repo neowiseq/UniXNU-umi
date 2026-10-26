@@ -1,0 +1,516 @@
+{
+  "display": {
+    "ui": "DisplayDxe",
+    "guid": "4138022F-06C7-4F79-9C94-7E33B511A4E7",
+    "efi": "QcomPkg/Drivers/DisplayDxe/DisplayDxe.efi",
+    "inf": "QcomPkg/Drivers/DisplayDxe/DisplayDxe.inf",
+    "pe_sha256": "ec71edba85d49260842707e39abbc75970a268fa97f6bd3c600d5db48de96ac0"
+  },
+  "original_depex": {
+    "source_sha256": "fc8c930caf217dbd520cb34342b556b04c926ee4211476f39e46fed32322a809",
+    "source_file_path": "1 8C8CE578-8A3D-4F1C-9935-896185C32DD3/3 9E21FD93-9C72-4C15-8C4B-E77F1DB2D792/0 1D301FE9-BE79-4353-91C2-D23BC959AE0C/1 Volume image section/0 631008B0-B2D1-410A-8B49-2C5C4D8ECC7E/60 DisplayDxe",
+    "source_file_body_sha256": "beb814643a77acd4b061ab79529f50815d577103cbfd9af1e409aa1eaa36aea8",
+    "section_path": "1 8C8CE578-8A3D-4F1C-9935-896185C32DD3/3 9E21FD93-9C72-4C15-8C4B-E77F1DB2D792/0 1D301FE9-BE79-4353-91C2-D23BC959AE0C/1 Volume image section/0 631008B0-B2D1-410A-8B49-2C5C4D8ECC7E/60 DisplayDxe/0 DXE dependency section",
+    "section_info_sha256": "39e6d55846bfced83b553d49ed3d06f6e90fcb78de1ebe1c7924179b9dcfa4ad",
+    "sha256": "1160a8a2f29f1ca18fa4b8384384536925bac48301e59f7235e43b0aff451b62",
+    "bytes": 162,
+    "original_hex": "02455c7a15b221c543ba7c822fee5fe59902690476b00c977a48a4b528db7b45cef102417cef5b60a55b43835b3c3ebf2bd151022df8bfc1926cfb488355c7fb4218a4ea024fcc66a96cee4d42a7628ed3b5a4a50102ff1d86476f5569429b28062ec3ecb30d0218ec9aadf07b09489e963012309f3df702b1e87ab2103e074dab5ceb9a6dc6fa8f02e6fa1a245f886c4fa7eac28eab79c3e5030303030303030308",
+    "file": "QcomPkg/Drivers/DisplayDxe/DisplayDxe.depex"
+  },
+  "operations": [
+    {
+      "offset": 0,
+      "opcode": "PUSH",
+      "guid": "157A5C45-21B2-43C5-BA7C-822FEE5FE599"
+    },
+    {
+      "offset": 17,
+      "opcode": "PUSH",
+      "guid": "B0760469-970C-487A-A4B5-28DB7B45CEF1"
+    },
+    {
+      "offset": 34,
+      "opcode": "PUSH",
+      "guid": "5BEF7C41-A560-435B-835B-3C3EBF2BD151"
+    },
+    {
+      "offset": 51,
+      "opcode": "PUSH",
+      "guid": "C1BFF82D-6C92-48FB-8355-C7FB4218A4EA"
+    },
+    {
+      "offset": 68,
+      "opcode": "PUSH",
+      "guid": "A966CC4F-EE6C-424D-A762-8ED3B5A4A501"
+    },
+    {
+      "offset": 85,
+      "opcode": "PUSH",
+      "guid": "47861DFF-556F-4269-9B28-062EC3ECB30D"
+    },
+    {
+      "offset": 102,
+      "opcode": "PUSH",
+      "guid": "AD9AEC18-7BF0-4809-9E96-3012309F3DF7"
+    },
+    {
+      "offset": 119,
+      "opcode": "PUSH",
+      "guid": "B27AE8B1-3E10-4D07-AB5C-EB9A6DC6FA8F"
+    },
+    {
+      "offset": 136,
+      "opcode": "PUSH",
+      "guid": "241AFAE6-885F-4F6C-A7EA-C28EAB79C3E5"
+    },
+    {
+      "offset": 153,
+      "opcode": "AND"
+    },
+    {
+      "offset": 154,
+      "opcode": "AND"
+    },
+    {
+      "offset": 155,
+      "opcode": "AND"
+    },
+    {
+      "offset": 156,
+      "opcode": "AND"
+    },
+    {
+      "offset": 157,
+      "opcode": "AND"
+    },
+    {
+      "offset": 158,
+      "opcode": "AND"
+    },
+    {
+      "offset": 159,
+      "opcode": "AND"
+    },
+    {
+      "offset": 160,
+      "opcode": "AND"
+    },
+    {
+      "offset": 161,
+      "opcode": "END"
+    }
+  ],
+  "dependencies": [
+    {
+      "guid": "157A5C45-21B2-43C5-BA7C-822FEE5FE599",
+      "byte_occurrence_candidates": [
+        {
+          "ui": "PdcDxe",
+          "file_guid": "B43C22DB-6333-490C-872D-0A73439059FD",
+          "efi": "QcomPkg/Drivers/PdcDxe/PdcDxe.efi",
+          "offsets": [
+            24680
+          ]
+        },
+        {
+          "ui": "ClockDxe",
+          "file_guid": "4DB5DEA6-5302-4D1A-8A82-677A683B0D29",
+          "efi": "QcomPkg/Drivers/ClockDxe/ClockDxe.efi",
+          "offsets": [
+            123000
+          ]
+        },
+        {
+          "ui": "SdccDxe",
+          "file_guid": "F10F76DB-42C1-533F-34A8-69BE24653110",
+          "efi": "QcomPkg/Drivers/SdccDxe/SdccDxe.efi",
+          "offsets": [
+            94888
+          ]
+        },
+        {
+          "ui": "UFSDxe",
+          "file_guid": "0D35CD8E-97EA-4F9A-96AF-0F0D89F76567",
+          "efi": "QcomPkg/Drivers/UFSDxe/UFSDxe.efi",
+          "offsets": [
+            103048
+          ]
+        },
+        {
+          "ui": "VibratorDxe",
+          "file_guid": "82C22DEC-6375-4A61-AAE1-573B137A3DEC",
+          "efi": "QcomPkg/Drivers/VibratorDxe/VibratorDxe.efi",
+          "offsets": [
+            53448
+          ]
+        },
+        {
+          "ui": "PlatformInfoDxeDriver",
+          "file_guid": "B105211B-BBBD-4ADD-A3B0-D1CF4A52154C",
+          "efi": "QcomPkg/Drivers/PlatformInfoDxe/PlatformInfoDxe.efi",
+          "offsets": [
+            28744
+          ]
+        },
+        {
+          "ui": "ButtonsDxe",
+          "file_guid": "5BD181DB-0487-4F1A-AE73-820E165611B3",
+          "efi": "QcomPkg/Drivers/ButtonsDxe/ButtonsDxe.efi",
+          "offsets": [
+            32936
+          ]
+        },
+        {
+          "ui": "PmicDxe",
+          "file_guid": "5776232E-082D-4B75-9A0E-FE1D13F7A5D9",
+          "efi": "QcomPkg/Drivers/PmicDxe/PmicDxeLa.efi",
+          "offsets": [
+            176376
+          ]
+        },
+        {
+          "ui": "ChargerExDxe",
+          "file_guid": "2E3042F3-2BB9-463F-8866-56D75B7C4AB0",
+          "efi": "QcomPkg/Drivers/ChargerExDxe/ChargerExDxe.efi",
+          "offsets": [
+            24760
+          ]
+        },
+        {
+          "ui": "QcomChargerDxeLA",
+          "file_guid": "4BCE7F36-428E-4393-99E3-7E0844404DBA",
+          "efi": "QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.efi",
+          "offsets": [
+            123032
+          ]
+        },
+        {
+          "ui": "UsbPwrCtrlDxe",
+          "file_guid": "11FAED4C-B21F-4D88-8E48-C4C28A1E50DF",
+          "efi": "QcomPkg/Drivers/UsbPwrCtrlDxe/UsbPwrCtrlDxe.efi",
+          "offsets": [
+            28808
+          ]
+        },
+        {
+          "ui": "LimitsDxe",
+          "file_guid": "F09AD92E-4E91-490F-AB99-E69939B840B2",
+          "efi": "QcomPkg/Drivers/LimitsDxe/LimitsDxe.efi",
+          "offsets": [
+            57592
+          ]
+        },
+        {
+          "ui": "UsbfnDwc3Dxe",
+          "file_guid": "94F8A6A7-DC34-4101-88C1-99179CCEAE83",
+          "efi": "QcomPkg/Drivers/UsbfnDwc3Dxe/UsbfnDwc3Dxe.efi",
+          "offsets": [
+            94360
+          ]
+        },
+        {
+          "ui": "UsbConfigDxe",
+          "file_guid": "CD823A4D-7DEC-4531-AE5D-4134FA4127B8",
+          "efi": "QcomPkg/Drivers/UsbConfigDxe/UsbConfigDxe.efi",
+          "offsets": [
+            86328
+          ]
+        },
+        {
+          "ui": "MiTokenDxe",
+          "file_guid": "068AAE46-BDC6-4073-85D5-31C5EEF19A15",
+          "efi": "MiPkg/Protocol/MiToken/MiToken.efi",
+          "offsets": [
+            32952
+          ]
+        },
+        {
+          "ui": "QcomBds",
+          "file_guid": "5A50AA81-C3AE-4608-A0E3-41A2E69BAF94",
+          "efi": "QcomPkg/Drivers/QcomBds/QcomBds.efi",
+          "offsets": [
+            98920
+          ]
+        },
+        {
+          "ui": "QcomChargerApp",
+          "file_guid": "EEE9C2B1-16CA-4F34-87EA-2E6D1E160CC4",
+          "efi": "QcomPkg/Application/QcomChargerApp/QcomChargerApp.efi",
+          "offsets": [
+            78184
+          ]
+        }
+      ],
+      "confirmed_protocol_provider": null,
+      "status": "candidate byte occurrences only"
+    },
+    {
+      "guid": "241AFAE6-885F-4F6C-A7EA-C28EAB79C3E5",
+      "byte_occurrence_candidates": [
+        {
+          "ui": "CPRDxe",
+          "file_guid": "1B52138D-3FA3-4E50-B958-20887353F809",
+          "efi": "QcomPkg/Drivers/CPRDxe/CPRDxe.efi",
+          "offsets": [
+            57448
+          ]
+        },
+        {
+          "ui": "ClockDxe",
+          "file_guid": "4DB5DEA6-5302-4D1A-8A82-677A683B0D29",
+          "efi": "QcomPkg/Drivers/ClockDxe/ClockDxe.efi",
+          "offsets": [
+            122984
+          ]
+        },
+        {
+          "ui": "SdccDxe",
+          "file_guid": "F10F76DB-42C1-533F-34A8-69BE24653110",
+          "efi": "QcomPkg/Drivers/SdccDxe/SdccDxe.efi",
+          "offsets": [
+            94808
+          ]
+        },
+        {
+          "ui": "UFSDxe",
+          "file_guid": "0D35CD8E-97EA-4F9A-96AF-0F0D89F76567",
+          "efi": "QcomPkg/Drivers/UFSDxe/UFSDxe.efi",
+          "offsets": [
+            102872
+          ]
+        },
+        {
+          "ui": "FeatureEnablerDxe",
+          "file_guid": "1C04F529-0612-4319-9315-B2E75C16810A",
+          "efi": "QcomPkg/Drivers/FeatureEnablerDxe/FeatureEnablerDxe.efi",
+          "offsets": [
+            24664
+          ]
+        },
+        {
+          "ui": "LimitsDxe",
+          "file_guid": "F09AD92E-4E91-490F-AB99-E69939B840B2",
+          "efi": "QcomPkg/Drivers/LimitsDxe/LimitsDxe.efi",
+          "offsets": [
+            57736
+          ]
+        },
+        {
+          "ui": "UsbConfigDxe",
+          "file_guid": "CD823A4D-7DEC-4531-AE5D-4134FA4127B8",
+          "efi": "QcomPkg/Drivers/UsbConfigDxe/UsbConfigDxe.efi",
+          "offsets": [
+            86280
+          ]
+        },
+        {
+          "ui": "QcomBds",
+          "file_guid": "5A50AA81-C3AE-4608-A0E3-41A2E69BAF94",
+          "efi": "QcomPkg/Drivers/QcomBds/QcomBds.efi",
+          "offsets": [
+            99192
+          ]
+        },
+        {
+          "ui": "QcomChargerApp",
+          "file_guid": "EEE9C2B1-16CA-4F34-87EA-2E6D1E160CC4",
+          "efi": "QcomPkg/Application/QcomChargerApp/QcomChargerApp.efi",
+          "offsets": [
+            78056
+          ]
+        }
+      ],
+      "confirmed_protocol_provider": null,
+      "status": "candidate byte occurrences only"
+    },
+    {
+      "guid": "47861DFF-556F-4269-9B28-062EC3ECB30D",
+      "byte_occurrence_candidates": [],
+      "confirmed_protocol_provider": null,
+      "status": "no occurrence in other imported stock executables"
+    },
+    {
+      "guid": "5BEF7C41-A560-435B-835B-3C3EBF2BD151",
+      "byte_occurrence_candidates": [
+        {
+          "ui": "PmicDxe",
+          "file_guid": "5776232E-082D-4B75-9A0E-FE1D13F7A5D9",
+          "efi": "QcomPkg/Drivers/PmicDxe/PmicDxeLa.efi",
+          "offsets": [
+            176344
+          ]
+        }
+      ],
+      "confirmed_protocol_provider": null,
+      "status": "candidate byte occurrences only"
+    },
+    {
+      "guid": "A966CC4F-EE6C-424D-A762-8ED3B5A4A501",
+      "byte_occurrence_candidates": [],
+      "confirmed_protocol_provider": null,
+      "status": "no occurrence in other imported stock executables"
+    },
+    {
+      "guid": "AD9AEC18-7BF0-4809-9E96-3012309F3DF7",
+      "byte_occurrence_candidates": [
+        {
+          "ui": "DALTLMM",
+          "file_guid": "8681CC5A-0DF6-441E-B4B8-E915C538F067",
+          "efi": "QcomPkg/Drivers/TLMMDxe/TLMMDxe.efi",
+          "offsets": [
+            28760
+          ]
+        },
+        {
+          "ui": "VibratorDxe",
+          "file_guid": "82C22DEC-6375-4A61-AAE1-573B137A3DEC",
+          "efi": "QcomPkg/Drivers/VibratorDxe/VibratorDxe.efi",
+          "offsets": [
+            53384
+          ]
+        },
+        {
+          "ui": "QcomChargerDxeLA",
+          "file_guid": "4BCE7F36-428E-4393-99E3-7E0844404DBA",
+          "efi": "QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.efi",
+          "offsets": [
+            123160
+          ]
+        }
+      ],
+      "confirmed_protocol_provider": null,
+      "status": "candidate byte occurrences only"
+    },
+    {
+      "guid": "B0760469-970C-487A-A4B5-28DB7B45CEF1",
+      "byte_occurrence_candidates": [
+        {
+          "ui": "ChipInfo",
+          "file_guid": "10E193DF-9966-44E7-B17C-59DD831E20FC",
+          "efi": "QcomPkg/Drivers/ChipInfoDxe/ChipInfoDxe.efi",
+          "offsets": [
+            36952
+          ]
+        },
+        {
+          "ui": "PdcDxe",
+          "file_guid": "B43C22DB-6333-490C-872D-0A73439059FD",
+          "efi": "QcomPkg/Drivers/PdcDxe/PdcDxe.efi",
+          "offsets": [
+            24696
+          ]
+        },
+        {
+          "ui": "FeatureEnablerDxe",
+          "file_guid": "1C04F529-0612-4319-9315-B2E75C16810A",
+          "efi": "QcomPkg/Drivers/FeatureEnablerDxe/FeatureEnablerDxe.efi",
+          "offsets": [
+            24680
+          ]
+        },
+        {
+          "ui": "PmicDxe",
+          "file_guid": "5776232E-082D-4B75-9A0E-FE1D13F7A5D9",
+          "efi": "QcomPkg/Drivers/PmicDxe/PmicDxeLa.efi",
+          "offsets": [
+            176360
+          ]
+        },
+        {
+          "ui": "LimitsDxe",
+          "file_guid": "F09AD92E-4E91-490F-AB99-E69939B840B2",
+          "efi": "QcomPkg/Drivers/LimitsDxe/LimitsDxe.efi",
+          "offsets": [
+            57608
+          ]
+        },
+        {
+          "ui": "UsbConfigDxe",
+          "file_guid": "CD823A4D-7DEC-4531-AE5D-4134FA4127B8",
+          "efi": "QcomPkg/Drivers/UsbConfigDxe/UsbConfigDxe.efi",
+          "offsets": [
+            86184
+          ]
+        },
+        {
+          "ui": "MiTokenDxe",
+          "file_guid": "068AAE46-BDC6-4073-85D5-31C5EEF19A15",
+          "efi": "MiPkg/Protocol/MiToken/MiToken.efi",
+          "offsets": [
+            32856
+          ]
+        },
+        {
+          "ui": "QcomBds",
+          "file_guid": "5A50AA81-C3AE-4608-A0E3-41A2E69BAF94",
+          "efi": "QcomPkg/Drivers/QcomBds/QcomBds.efi",
+          "offsets": [
+            98936
+          ]
+        },
+        {
+          "ui": "SPSSDxe",
+          "file_guid": "5D787B6C-6254-43F5-A7A8-CB25329CF97E",
+          "efi": "QcomPkg/Drivers/SPSSDxe/SPSSDxe.efi",
+          "offsets": [
+            37032
+          ]
+        }
+      ],
+      "confirmed_protocol_provider": null,
+      "status": "candidate byte occurrences only"
+    },
+    {
+      "guid": "B27AE8B1-3E10-4D07-AB5C-EB9A6DC6FA8F",
+      "byte_occurrence_candidates": [
+        {
+          "ui": "I2C",
+          "file_guid": "04DE8591-D2B3-4077-BBBE-B12070094EB6",
+          "efi": "QcomPkg/Drivers/I2CDxe/I2CDxe.efi",
+          "offsets": [
+            32840
+          ]
+        },
+        {
+          "ui": "VibratorDxe",
+          "file_guid": "82C22DEC-6375-4A61-AAE1-573B137A3DEC",
+          "efi": "QcomPkg/Drivers/VibratorDxe/VibratorDxe.efi",
+          "offsets": [
+            53400
+          ]
+        },
+        {
+          "ui": "QcomChargerDxeLA",
+          "file_guid": "4BCE7F36-428E-4393-99E3-7E0844404DBA",
+          "efi": "QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.efi",
+          "offsets": [
+            123144
+          ]
+        }
+      ],
+      "confirmed_protocol_provider": null,
+      "status": "candidate byte occurrences only"
+    },
+    {
+      "guid": "C1BFF82D-6C92-48FB-8355-C7FB4218A4EA",
+      "byte_occurrence_candidates": [
+        {
+          "ui": "PmicDxe",
+          "file_guid": "5776232E-082D-4B75-9A0E-FE1D13F7A5D9",
+          "efi": "QcomPkg/Drivers/PmicDxe/PmicDxeLa.efi",
+          "offsets": [
+            176520
+          ]
+        }
+      ],
+      "confirmed_protocol_provider": null,
+      "status": "candidate byte occurrences only"
+    }
+  ],
+  "runtime_dependency_satisfaction": "unverified",
+  "limitations": [
+    "GUID byte matches do not prove InstallProtocolInterface or a protocol provider.",
+    "Zero matches do not exclude a provider in another image or generated at runtime.",
+    "No synthetic protocols or DEPEX changes have been introduced."
+  ]
+}

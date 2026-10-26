@@ -1,0 +1,11 @@
+# Generated from this umi device's verified XBL; vendor bytes stay outside Git.
+[Defines]
+  INF_VERSION = 0x0001001B
+  BASE_NAME = PdcDxe
+  FILE_GUID = B43C22DB-6333-490C-872D-0A73439059FD
+  MODULE_TYPE = DXE_DRIVER
+  VERSION_STRING = 1.0
+
+[Binaries.AARCH64]
+  PE32|PdcDxe.efi|*
+  DXE_DEPEX|PdcDxe.depex|*
