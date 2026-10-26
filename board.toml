@@ -93,7 +93,7 @@ size_mib = 64
 loader = "firmware"
 title = "Mi 10 - XNU bring-up"
 # Sum of the three observed FDT DRAM banks, including RAM above 4 GiB.
-dram_size = "0x2f9900000"
+dram_size = "0x1FBB00000"
 panic_screen = false
 timeout = -1
 kernel_args = ["-v", "keepsyms=1", "kt_fixed_zones=120"]

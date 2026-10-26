@@ -13,15 +13,15 @@
   "memory_banks": [
     {
       "base": 2147483648,
-      "size": 965738496
+      "size": 1001390080
     },
     {
-      "base": 8589934592,
-      "size": 6442450944
+      "base": 6442450944,
+      "size": 4294967296
     },
     {
       "base": 3221225472,
-      "size": 5368709120
+      "size": 3221225472
     }
   ],
   "cpus": [
@@ -107,6 +107,13 @@
     "evidence_snapshot": "20261020T040435517245Z",
     "uefi_baseline_attempt": 15,
     "uefi_fd_sha256": "e0acc39055bcfe5e349a5a5f405058a55d99a9f90c2b65c389ae37745156f9d6",
-    "uefi_console_sha256": "ee62de60d64a1dff110ec1ae3eb457307b1391a09e430fc0a96190546c6ddb83"
+    "uefi_console_sha256": "ee62de60d64a1dff110ec1ae3eb457307b1391a09e430fc0a96190546c6ddb83",
+    "memory_capture": {
+      "capture": "capture-20261026T045618Z",
+      "memory_reg_sha256": "c274ec425d79f389c5d9a3e024430efc2203837a4a255b3390872aee9d561c6e",
+      "bank_count": 3,
+      "total_bytes": 8517582848,
+      "note": "runtime /proc/device-tree/memory/reg on 8 GB/256 GB umi; supersedes the committed 12 GiB banks for this handset"
+    }
   }
 }
