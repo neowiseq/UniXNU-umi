@@ -10,6 +10,13 @@ on:
         options:
           - payload
           - xnu-entry
+      kernel_mode:
+        description: "baseline | early-trace (RAM-console markers at 0xb0000000)"
+        default: baseline
+        type: choice
+        options:
+          - baseline
+          - early-trace
 
 permissions:
   contents: read
@@ -107,12 +114,18 @@ jobs:
           echo "inputs ok"
 
       - name: Build source kernel
-        run: python tools/build_umi_xnu.py --stage all --jobs 4
+        run: |
+          if [ "${{ inputs.kernel_mode }}" = "early-trace" ]; then
+            python tools/build_umi_xnu.py --stage all --jobs 4 --early-trace
+          else
+            python tools/build_umi_xnu.py --stage all --jobs 4
+          fi
 
       - name: Generate XNU baselines (xnu-entry only)
         if: ${{ inputs.ram_check == 'xnu-entry' }}
         env:
           SEED: ${{ secrets.UMI_UNIQUE_CHIP_ID }}
+          KERNEL_NAME: ${{ inputs.kernel_mode == 'early-trace' && 'entry-trace-kernel.macho' || 'source-kernel.macho' }}
         run: |
           mkdir -p out/umi/adt
           IDENTITY_ARG=""
@@ -126,7 +139,7 @@ jobs:
           from pathlib import Path
           adt = Path("out/umi/adt/umi.adt").resolve()
           Path("out/umi/adt-baseline.json").write_text(json.dumps({"output": str(adt), "adt_sha256": hashlib.sha256(adt.read_bytes()).hexdigest()}))
-          k = Path("out/umi-xnu/umi/kernel/source-kernel.macho").resolve()
+          k = (Path("out/umi-xnu/umi/kernel") / __import__("os").environ.get("KERNEL_NAME", "source-kernel.macho")).resolve()
           Path("out/umi/xnu-entry-baseline.json").write_text(json.dumps({"kernel": {"kernel": str(k), "sha256": hashlib.sha256(k.read_bytes()).hexdigest()}}))
           PY
 
