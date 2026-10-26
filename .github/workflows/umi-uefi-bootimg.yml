@@ -47,7 +47,14 @@ jobs:
           xcrun --sdk iphoneos --show-sdk-path
 
       - name: Install build dependencies
-        run: brew install cmake ninja unifdef llvm dtc mtools acpica nasm
+        run: brew install cmake ninja unifdef llvm lld dtc mtools acpica nasm
+
+      - name: Verify CLANGPDB toolchain
+        run: |
+          export PATH="/opt/homebrew/opt/llvm/bin:/opt/homebrew/opt/lld/bin:$PATH"
+          for t in clang lld-link llvm-lib llvm-rc llvm-ar ld.lld; do
+            printf '%-10s -> ' "$t"; command -v "$t" || echo MISSING
+          done
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
