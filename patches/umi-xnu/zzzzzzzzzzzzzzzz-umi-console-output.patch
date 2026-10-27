@@ -20,20 +20,65 @@ diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
  	}
  	if (!vm_initialized) {
 diff --git a/osfmk/console/serial_console.c b/osfmk/console/serial_console.c
+index e6d38d3..b6a4772 100644
 --- a/osfmk/console/serial_console.c
 +++ b/osfmk/console/serial_console.c
-@@ -623,5 +623,14 @@
- void
- console_write_char(char c)
- {
-+	extern unsigned long umi_trace_console_address;
-+	if (umi_trace_console_address) {
-+		volatile uint32_t *hdr = (volatile uint32_t *)umi_trace_console_address;
-+		uint32_t start = hdr[1], end = hdr[2];
-+		if (hdr[0] == 0x43474244U && end < 0x1fff4U && start <= end) {
-+			((volatile unsigned char *)(umi_trace_console_address + 12))[end] = (unsigned char)c;
-+			hdr[2] = end + 1;
-+		}
+@@ -248,6 +248,50 @@ get_cons_ops_index(void)
+  * @param poll Whether or not this call should poll instead of going to sleep
+  *             waiting for an interrupt when the hardware device isn't ready
+  */
++
++/*
++ * umi: mirror every character handed to the console (video or serial) into the
++ * persistent ramoops console ring at 0xb0000000, so the log survives a kernel
++ * that stops silently. The ring uses the Linux persistent_ram_buffer layout:
++ *   u32 sig (0x43474244), u32 start, u32 size, u8 data[cap]
++ * kprintf() output reaches the hardware through _cnputc(), not through the
++ * buffered console_write_char() path, so the mirror has to live here.
++ */
++extern unsigned long umi_trace_console_address;
++
++static void
++umi_ramoops_putc(char c)
++{
++	volatile uint32_t *hdr;
++	uint32_t at, size;
++	const uint32_t cap = 0x1fff4U;
++
++	if (!umi_trace_console_address) {
++		return;
 +	}
- 	console_write(&c, 1);
++	hdr = (volatile uint32_t *)umi_trace_console_address;
++	if (hdr[0] != 0x43474244U) {
++		return;
++	}
++	at = hdr[1];
++	size = hdr[2];
++	if (at >= cap) {
++		at = 0;
++	}
++	((volatile unsigned char *)hdr)[12 + at] = (unsigned char)c;
++	at++;
++	if (at >= cap) {
++		at = 0;
++	}
++	if (size < cap) {
++		size++;
++	}
++	__asm__ volatile("dsb sy" ::: "memory");
++	hdr[2] = size;
++	hdr[1] = at;
++	__asm__ volatile("dsb sy" ::: "memory");
++}
++
+ static inline void
+ _cnputc(char c, bool poll)
+ {
+@@ -260,6 +304,7 @@ _cnputc(char c, bool poll)
+ 		_cnputc('\r', poll);
+ 	}
+ 
++	umi_ramoops_putc(c);
+ 	cons_ops[idx].putc(c, poll);
  }
+ 
