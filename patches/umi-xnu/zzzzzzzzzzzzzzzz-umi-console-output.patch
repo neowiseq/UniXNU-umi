@@ -5,12 +5,12 @@ diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
  		PE_state.video.v_scale = ((boot_args_ptr->Video.v_depth >> kBootVideoDepthScaleShift) & kBootVideoDepthMask) + 1;
  		PE_state.video.v_display = boot_args_ptr->Video.v_display;
 +		/*
-+		 * umi: DarwinBoot hands over the visible GOP framebuffer at
-+		 * 0x90000000 (1080x2340, 32bpp, 4320 B/row). boot_args->Video
-+		 * points at the device-tree splash (0x9c000000), which the display
-+		 * controller never scans out, so kprintf output was invisible.
++		 * umi: DarwinBoot and UmiInheritedFbDxe both point Video at
++		 * 0x9c000000, which is the buffer the panel actually scans out.
++		 * The geometry handed to vc_initialize is incomplete, so force the
++		 * full 1080x2340 / 32bpp / 4320 B-per-row layout the firmware used.
 +		 */
-+		PE_state.video.v_baseAddr = 0x90000000UL;
++		PE_state.video.v_baseAddr = 0x9C000000UL;
 +		PE_state.video.v_rowBytes = 4320;
 +		PE_state.video.v_width = 1080;
 +		PE_state.video.v_height = 2340;
