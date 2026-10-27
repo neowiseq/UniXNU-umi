@@ -82,7 +82,7 @@ index e6d38d3..d98bc5c 100644
 +	cons_ops_index = VC_CONS_OPS;
 +}
 diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
-index bb7882d..ae37e61 100644
+index bb7882d..0dec4d9 100644
 --- a/pexpert/arm/pe_init.c
 +++ b/pexpert/arm/pe_init.c
 @@ -432,6 +432,17 @@ PE_init_platform(boolean_t vm_initialized, void *args)
@@ -117,14 +117,14 @@ index bb7882d..ae37e61 100644
 +	{
 +		extern void umi_force_video_console(void);
 +		extern uint32_t umi_console_ops_index(void);
-+		vm_offset_t umi_fb = ml_io_map(0x9C000000UL, 2340UL * 4320UL);
++		vm_offset_t umi_fb = ml_io_map(0x9C000000UL, 0x200000UL);
 +
 +		umi_early_trace(0x64, (unsigned long)umi_fb, umi_trace_console_address);
 +		if (umi_fb) {
 +			PE_state.video.v_baseAddr = umi_fb;      /* mapped VA, bit0 clear */
 +			PE_state.video.v_rowBytes = 4320;
 +			PE_state.video.v_width = 1080;
-+			PE_state.video.v_height = 2340;
++			PE_state.video.v_height = 480;           /* 30 text rows inside 2 MiB */
 +			PE_state.video.v_depth = 32;
 +			PE_state.video.v_display = 1;
 +		}
