@@ -1,0 +1,40 @@
+diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
+--- a/pexpert/arm/pe_init.c
++++ b/pexpert/arm/pe_init.c
+@@ -427,6 +427,18 @@
+ 		) % 4;
+ 		PE_state.video.v_scale = ((boot_args_ptr->Video.v_depth >> kBootVideoDepthScaleShift) & kBootVideoDepthMask) + 1;
+ 		PE_state.video.v_display = boot_args_ptr->Video.v_display;
++		/*
++		 * umi: DarwinBoot hands over the visible GOP framebuffer at
++		 * 0x90000000 (1080x2340, 32bpp, 4320 B/row). boot_args->Video
++		 * points at the device-tree splash (0x9c000000), which the display
++		 * controller never scans out, so kprintf output was invisible.
++		 */
++		PE_state.video.v_baseAddr = 0x90000000UL;
++		PE_state.video.v_rowBytes = 4320;
++		PE_state.video.v_width = 1080;
++		PE_state.video.v_height = 2340;
++		PE_state.video.v_depth = 32;
++		PE_state.video.v_display = 1;
+ 		strlcpy(PE_state.video.v_pixelFormat, "BBBBBBBBGGGGGGGGRRRRRRRR", sizeof(PE_state.video.v_pixelFormat));
+ 	}
+ 	if (!vm_initialized) {
+diff --git a/osfmk/console/serial_console.c b/osfmk/console/serial_console.c
+--- a/osfmk/console/serial_console.c
++++ b/osfmk/console/serial_console.c
+@@ -623,5 +623,14 @@
+ void
+ console_write_char(char c)
+ {
++	extern unsigned long umi_trace_console_address;
++	if (umi_trace_console_address) {
++		volatile uint32_t *hdr = (volatile uint32_t *)umi_trace_console_address;
++		uint32_t start = hdr[1], end = hdr[2];
++		if (hdr[0] == 0x43474244U && end < 0x1fff4U && start <= end) {
++			((volatile unsigned char *)(umi_trace_console_address + 12))[end] = (unsigned char)c;
++			hdr[2] = end + 1;
++		}
++	}
+ 	console_write(&c, 1);
+ }
