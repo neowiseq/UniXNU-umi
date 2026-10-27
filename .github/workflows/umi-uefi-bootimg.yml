@@ -17,6 +17,13 @@ on:
         options:
           - baseline
           - early-trace
+      kernel_variant:
+        description: "source | prelinked (donor kext closure from the pinned 21H461 kernelcache)"
+        default: source
+        type: choice
+        options:
+          - source
+          - prelinked
 
 permissions:
   contents: read
@@ -115,17 +122,52 @@ jobs:
 
       - name: Build source kernel
         run: |
+          ARGS="--stage all --jobs 4"
           if [ "${{ inputs.kernel_mode }}" = "early-trace" ]; then
-            python tools/build_umi_xnu.py --stage all --jobs 4 --early-trace
-          else
-            python tools/build_umi_xnu.py --stage all --jobs 4
+            ARGS="$ARGS --early-trace"
           fi
+          if [ "${{ inputs.kernel_variant }}" = "prelinked" ]; then
+            ARGS="$ARGS --crypto-bootstrap prelinked"
+          fi
+          python tools/build_umi_xnu.py $ARGS
+
+      - name: Fetch pinned donor components (prelinked only)
+        if: ${{ inputs.kernel_variant == 'prelinked' }}
+        run: |
+          mkdir -p out/umi-xnu/ipsw/21H461
+          BASE="https://github.com/neowiseq/UniXNU-umi/releases/download/donor-21H461"
+          for f in kernelcache.decompressed DeviceTree.j120ap.im4p 044-76040-038.dmg.trustcache 044-76034-038.dmg.trustcache; do
+            curl -fL "$BASE/$f" -o "out/umi-xnu/ipsw/21H461/$f"
+          done
+          python - <<'PY'
+          import hashlib, pathlib, sys
+          pins = {
+              "kernelcache.decompressed": "f18b4df865405f2a287b84977d7aca745e056d656d9fc9df1662970ce2969de7",
+              "DeviceTree.j120ap.im4p": "3f612f64819fbf6a8aacc03fabeda08ba897c4bf5385df995c59815c0c80c8f0",
+              "044-76040-038.dmg.trustcache": "4563bdbf6ed8f72237d45dbba3ccde432634338f95c10d79d5d4631678a97c7c",
+              "044-76034-038.dmg.trustcache": "9742f3d566369e6c48f63b3dc0740b06c243d13c6650e25bbf44616e13d6d097",
+          }
+          root = pathlib.Path("out/umi-xnu/ipsw/21H461")
+          bad = [n for n, pin in pins.items()
+                 if hashlib.sha256((root / n).read_bytes()).hexdigest() != pin]
+          print("donor sha256 ok" if not bad else "donor mismatch: " + ", ".join(bad))
+          sys.exit(1 if bad else 0)
+          PY
+
+      - name: Emit prelinked kernel (prelinked only)
+        if: ${{ inputs.kernel_variant == 'prelinked' }}
+        run: |
+          mkdir -p out/umi-xnu/umi/kernel
+          EXTRA=""
+          if [ "${{ inputs.kernel_mode }}" = "early-trace" ]; then EXTRA="--early-trace"; fi
+          python tools/build_umi_prelink.py --profile phone $EXTRA \
+            --output out/umi-xnu/umi/kernel/prelinked-kernel.macho
 
       - name: Generate XNU baselines (xnu-entry only)
         if: ${{ inputs.ram_check == 'xnu-entry' }}
         env:
           SEED: ${{ secrets.UMI_UNIQUE_CHIP_ID }}
-          KERNEL_NAME: ${{ inputs.kernel_mode == 'early-trace' && 'entry-trace-kernel.macho' || 'source-kernel.macho' }}
+          KERNEL_NAME: ${{ inputs.kernel_variant == 'prelinked' && 'prelinked-kernel.macho' || (inputs.kernel_mode == 'early-trace' && 'entry-trace-kernel.macho' || 'source-kernel.macho') }}
         run: |
           mkdir -p out/umi/adt
           IDENTITY_ARG=""
