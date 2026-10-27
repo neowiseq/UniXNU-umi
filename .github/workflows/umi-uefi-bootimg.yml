@@ -25,6 +25,10 @@ on:
         options:
           - source
           - prelinked
+      prelink_unqualified:
+        description: "prelinked only: structural audit without the upstream QEMU qualification receipts"
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -198,6 +202,8 @@ jobs:
           "$GITHUB_WORKSPACE/out/tools/uefiextract/uefiextract" --version
 
       - name: Build UEFI firmware + boot image
+        env:
+          UMI_ALLOW_UNQUALIFIED_PRELINK: ${{ inputs.prelink_unqualified && '1' || '0' }}
         run: |
           python tools/build_umi_uefi.py \
             --firmware local-inputs \

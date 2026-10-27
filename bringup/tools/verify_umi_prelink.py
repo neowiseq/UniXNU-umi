@@ -597,3 +597,67 @@ def audit(path):
         "functional_power_backend": False,
         "hardware_tested": False,
     }
+
+
+def audit_unqualified(path):
+    """Structural audit for a locally prelinked kernel.
+
+    The qualified audit needs the QEMU receipt set that ships with the upstream
+    bring-up tree (out/umi/qemu-baseline.json and its siblings). A hardware
+    bring-up tree has no such receipts, so this mode keeps every check that can
+    be made from the candidate bytes alone and records explicitly that the QEMU
+    qualification did not run. It is enabled only by
+    UMI_ALLOW_UNQUALIFIED_PRELINK=1.
+    """
+    path = Path(path).resolve()
+    data = path.read_bytes()
+    report = json.loads(path.with_suffix(".json").read_text())
+    provenance = json.loads(path.with_suffix(".provenance.json").read_text())
+    parsed = macho(data)
+    if parsed["kind"] != 2:
+        raise ValueError("Expected MH_EXECUTE")
+    segments = parsed["segments"]
+    for segment in segments:
+        if segment["filesize"] and segment["fileoff"] + segment["filesize"] > len(data):
+            raise ValueError("Segment extends outside the file")
+    entries = []
+    for command, at, length in parsed["commands"]:
+        if command == 5:  # LC_UNIXTHREAD / ARM_THREAD_STATE64
+            if length < 288 or struct.unpack_from("<II", data, at + 8) != (6, 68):
+                raise ValueError("Unexpected kernel thread state")
+            entries.append(struct.unpack_from("<Q", data, at + 272)[0])
+    if len(entries) != 1 or not any(
+            s["initprot"] & 4 and s["va"] <= entries[0] < s["va"] + s["filesize"]
+            for s in segments):
+        raise ValueError("Kernel entry is not backed by executable bytes")
+    undefined = subprocess.check_output(["xcrun", "nm", "-u", str(path)], text=True).strip()
+    if undefined:
+        raise ValueError("Unresolved kernel symbols: " + undefined)
+    loaded = [s for s in segments if s["size"] and s["name"] != "__PAGEZERO"]
+    base = min(s["va"] for s in loaded)
+    span = max(s["va"] + s["size"] for s in loaded) - base
+    if span > 256 << 20:
+        raise ValueError("Prelinked kernel exceeds the planned 256 MiB window")
+    status = provenance.get("source_build", {})
+    print("UMI: unqualified prelink audit (no QEMU receipts in this tree)", file=sys.stderr)
+    return {
+        "status": "host_verified_unqualified",
+        "kernel": str(path), "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "candidate_sha256": report.get("candidate_sha256"),
+        "architecture": "ARM64 (subtype 0)", "file_type": "MH_EXECUTE",
+        "entry": hex(entries[0]), "virtual_base": hex(base),
+        "virtual_span_bytes": span, "prelinked": True,
+        "qemu_qualified": False,
+        "unqualified_reason": "UMI_ALLOW_UNQUALIFIED_PRELINK=1: no QEMU receipt set",
+        "components": report.get("components"),
+        "crypto_bootstrap": "prelinked",
+        "early_trace": status.get("early_trace"),
+        "profile": status.get("profile"),
+        "legacy_display": bool(status.get("legacy_display")),
+        "screen_diagnostics": bool(status.get("screen_diagnostics")),
+        "data_ramdisk": status.get("data_ramdisk"),
+        "native_ufs": bool(status.get("native_ufs")),
+        "owned_memory_bytes": 256 << 20, "fat_volume_bytes": 64 << 20,
+        "hardware_tested": False,
+    }

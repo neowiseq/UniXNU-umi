@@ -39,14 +39,18 @@ def make_payload(output_dir=None, diagnostic="payload"):
     data_input = None
     smp_profile = None
     if diagnostic in ("xnu", "xnu-entry", "xnu-prelink"):
+        unqualified = os.environ.get("UMI_ALLOW_UNQUALIFIED_PRELINK") == "1"
         if diagnostic == "xnu-prelink":
-            from verify_umi_prelink import audit
+            from verify_umi_prelink import audit, audit_unqualified
         else:
             from verify_umi_xnu import audit
         baseline_path = "out/umi/xnu-entry-baseline.json" if diagnostic != "xnu" else "out/umi/xnu-source-baseline.json"
         baseline = json.loads((ROOT / baseline_path).read_text())
         kernel = Path(baseline["kernel"]["kernel"])
-        checked = audit(kernel)
+        if diagnostic == "xnu-prelink" and unqualified:
+            checked = audit_unqualified(kernel)
+        else:
+            checked = audit(kernel)
         if sha(kernel) != checked["sha256"]:
             raise ValueError("Kernel report digest differs from the actual payload bytes")
         size_mib = checked.get("fat_volume_bytes", 64 << 20) >> 20
