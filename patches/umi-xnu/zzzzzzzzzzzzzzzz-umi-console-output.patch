@@ -81,75 +81,20 @@ index e6d38d3..d98bc5c 100644
 +{
 +	cons_ops_index = VC_CONS_OPS;
 +}
-diff --git a/osfmk/console/video_console.c b/osfmk/console/video_console.c
-index 4c1edf1..06b02b0 100644
---- a/osfmk/console/video_console.c
-+++ b/osfmk/console/video_console.c
-@@ -121,6 +121,12 @@ void noroot_icon_test(void);
- 
- 
- extern int       disableConsoleOutput;
-+#if defined(UMI_EARLY_TRACE) && UMI_EARLY_TRACE
-+extern void umi_early_trace(unsigned long phase, unsigned long value, unsigned long console);
-+extern unsigned long umi_trace_console_address;
-+extern uint32_t umi_console_ops_index(void);
-+extern void umi_force_video_console(void);
-+#endif
- static boolean_t gc_enabled     = FALSE;
- static boolean_t gc_initialized = FALSE;
- static boolean_t vm_initialized = FALSE;
-@@ -2840,7 +2846,12 @@ initialize_screen(PE_Video * boot_vinfo, unsigned int op)
- 		 *  If VM is up, we are given a virtual address, unless b0 is set to indicate physical.
- 		 */
- 		newVideoVirt = boot_vinfo->v_baseAddr;
--		makeMapping = (kernel_map == VM_MAP_NULL) || (0 != (1 & newVideoVirt));
-+		/*
-+		 * umi: v_baseAddr is the real GOP physical base (UmiInheritedFbDxe puts
-+		 * the panel scanout at 0x9c000000), so always map it instead of trusting
-+		 * the booter's virtual-address convention.
-+		 */
-+		makeMapping = TRUE;
- 		if (makeMapping) {
- 			newVideoVirt = 0;
- 			new_vinfo.v_physaddr = boot_vinfo->v_baseAddr & ~3UL;           /* Get the physical address */
-@@ -2927,6 +2938,22 @@ initialize_screen(PE_Video * boot_vinfo, unsigned int op)
- 			gc_ops.show_cursor  = vc_reverse_cursor;
- 			gc_ops.update_color = vc_update_color;
- 			gc_initialize(&vinfo);
-+#if defined(UMI_EARLY_TRACE) && UMI_EARLY_TRACE
-+			/*
-+			 * umi: kPEGraphicsMode never sets gc_enabled, so without this the panel
-+			 * stays blank until IOKit takes the display over. Force the text
-+			 * console on and report what the framebuffer resolved to.
-+			 */
-+			umi_force_video_console();
-+			gc_enabled = TRUE;
-+			gc_ops.enable(TRUE);
-+			umi_early_trace(0x68, (unsigned long)vinfo.v_baseaddr,
-+			    umi_trace_console_address);
-+			umi_early_trace(0x69, ((unsigned long)vinfo.v_rows << 32) |
-+			    (vinfo.v_columns & 0xffffffffUL), umi_trace_console_address);
-+			umi_early_trace(0x6a, (unsigned long)umi_console_ops_index(),
-+			    umi_trace_console_address);
-+#endif
- 		}
- 	}
- 
 diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
-index bb7882d..3cde2cb 100644
+index bb7882d..ae37e61 100644
 --- a/pexpert/arm/pe_init.c
 +++ b/pexpert/arm/pe_init.c
-@@ -432,6 +432,18 @@ PE_init_platform(boolean_t vm_initialized, void *args)
+@@ -432,6 +432,17 @@ PE_init_platform(boolean_t vm_initialized, void *args)
  			) % 4;
  		PE_state.video.v_scale = ((boot_args_ptr->Video.v_depth >> kBootVideoDepthScaleShift) & kBootVideoDepthMask) + 1;
  		PE_state.video.v_display = boot_args_ptr->Video.v_display;
 +		/*
 +		 * umi: DarwinBoot and UmiInheritedFbDxe both point Video at
 +		 * 0x9c000000, which is the buffer the panel actually scans out.
-+		 * Bit 0 of v_baseAddr is Darwin's "physical, please map" flag:
-+		 * initialize_screen() only maps the framebuffer when it is set.
++		 * Bit 0 of v_baseAddr means "physical, please map".
 +		 */
-+		PE_state.video.v_baseAddr = 0x9C000001UL; /* bit0: physical, map it */
++		PE_state.video.v_baseAddr = 0x9C000001UL;
 +		PE_state.video.v_rowBytes = 4320;
 +		PE_state.video.v_width = 1080;
 +		PE_state.video.v_height = 2340;
@@ -158,39 +103,51 @@ index bb7882d..3cde2cb 100644
  		strlcpy(PE_state.video.v_pixelFormat, "BBBBBBBBGGGGGGGGRRRRRRRR", sizeof(PE_state.video.v_pixelFormat));
  	}
  	if (!vm_initialized) {
-@@ -538,6 +550,35 @@ PE_create_console(void)
+@@ -538,9 +549,47 @@ PE_create_console(void)
  
  #if UMI_EARLY_TRACE
  	umi_early_trace(0x62, PE_state.video.v_display, umi_trace_console_address);
 +#endif
 +#if UMI_EARLY_TRACE
 +	/*
-+	 * umi diagnostic: map both candidate framebuffer bases and paint one strip
-+	 * in each, so the panel itself reports which buffer is scanned out.
-+	 * 0x9C000000 is what UmiInheritedFbDxe installs as the GOP and where the
-+	 * UEFI console text lands; 0x90000000 is the alternative.
++	 * umi: take the panel over here instead of inside initialize_screen().
++	 * Map the GOP base ourselves and hand initialize_screen() a already-mapped
++	 * virtual address (bit0 clear), so it never has to decide anything.
 +	 */
 +	{
-+		volatile uint32_t *umi_fb_a = (volatile uint32_t *)ml_io_map(0x9C000000UL, 0x3000);
-+		volatile uint32_t *umi_fb_b = (volatile uint32_t *)ml_io_map(0x90000000UL, 0x3000);
-+		unsigned int umi_i;
++		extern void umi_force_video_console(void);
++		extern uint32_t umi_console_ops_index(void);
++		vm_offset_t umi_fb = ml_io_map(0x9C000000UL, 2340UL * 4320UL);
 +
-+		umi_early_trace(0x64, (unsigned long)umi_fb_a, umi_trace_console_address);
-+		umi_early_trace(0x65, (unsigned long)umi_fb_b, umi_trace_console_address);
-+		if (umi_fb_a) {
-+			umi_early_trace(0x66, (unsigned long)umi_fb_a[0], umi_trace_console_address);
-+			for (umi_i = 0; umi_i < 0xC00; umi_i++) {
-+				umi_fb_a[umi_i] = 0x00FF00FFUL;         /* magenta strip */
-+			}
++		umi_early_trace(0x64, (unsigned long)umi_fb, umi_trace_console_address);
++		if (umi_fb) {
++			PE_state.video.v_baseAddr = umi_fb;      /* mapped VA, bit0 clear */
++			PE_state.video.v_rowBytes = 4320;
++			PE_state.video.v_width = 1080;
++			PE_state.video.v_height = 2340;
++			PE_state.video.v_depth = 32;
++			PE_state.video.v_display = 1;
 +		}
-+		if (umi_fb_b) {
-+			umi_early_trace(0x67, (unsigned long)umi_fb_b[0], umi_trace_console_address);
-+			for (umi_i = 0; umi_i < 0xC00; umi_i++) {
-+				umi_fb_b[umi_i] = 0x0000FF00UL;         /* green strip */
-+			}
-+		}
-+		__asm__ volatile("dsb sy" ::: "memory");
++		umi_force_video_console();
++		umi_early_trace(0x65, (unsigned long)umi_console_ops_index(),
++		    umi_trace_console_address);
 +	}
  #endif
  	if (PE_state.video.v_display) {
  		PE_initialize_console(&PE_state.video, kPEGraphicsMode);
++
++#if UMI_EARLY_TRACE
++		/*
++		 * umi: kPEGraphicsMode alone never enables the text console, so ask for
++		 * text first (sets gc_desire_text) and then acquire the screen: with
++		 * gc_desire_text set, graphics_now is FALSE and the kPEAcquireScreen arm
++		 * ends in gc_enable(TRUE).
++		 */
++		PE_initialize_console(&PE_state.video, kPETextScreen);
++		PE_initialize_console(&PE_state.video, kPEAcquireScreen);
++		umi_early_trace(0x68, (unsigned long)umi_console_ops_index(),
++		    umi_trace_console_address);
++#endif
+ 	} else {
+ 		PE_initialize_console(&PE_state.video, kPETextMode);
+ 	}
