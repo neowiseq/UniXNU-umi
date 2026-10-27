@@ -7,10 +7,10 @@ diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
 +		/*
 +		 * umi: DarwinBoot and UmiInheritedFbDxe both point Video at
 +		 * 0x9c000000, which is the buffer the panel actually scans out.
-+		 * The geometry handed to vc_initialize is incomplete, so force the
-+		 * full 1080x2340 / 32bpp / 4320 B-per-row layout the firmware used.
++		 * Bit 0 of v_baseAddr is Darwin's "physical, please map" flag:
++		 * initialize_screen() only maps when it is set. Geometry is forced
 +		 */
-+		PE_state.video.v_baseAddr = 0x9C000000UL;
++		PE_state.video.v_baseAddr = 0x9C000001UL; /* bit0: physical, map it */
 +		PE_state.video.v_rowBytes = 4320;
 +		PE_state.video.v_width = 1080;
 +		PE_state.video.v_height = 2340;
