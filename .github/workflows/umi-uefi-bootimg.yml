@@ -215,6 +215,17 @@ jobs:
             --ram-check ${{ inputs.ram_check }} \
             -j 4
 
+      - name: Upload boot image only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: umi-bootimg-only-${{ github.run_number }}
+          path: |
+            out/umi/boot/umi-uefi-menu.img
+            out/umi/boot/boot.json
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
