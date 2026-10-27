@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       ram_check:
-        description: "payload (diagnostic) | xnu-entry (XNU kernel payload)"
+        description: "payload (diagnostic) | xnu-entry | xnu-prelink (prelinked kernel)"
         default: payload
         type: choice
         options:
           - payload
           - xnu-entry
+          - xnu-prelink
       kernel_mode:
         description: "baseline | early-trace (RAM-console markers at 0xb0000000)"
         default: baseline
@@ -163,8 +164,8 @@ jobs:
           python tools/build_umi_prelink.py --profile phone $EXTRA \
             --output out/umi-xnu/umi/kernel/prelinked-kernel.macho
 
-      - name: Generate XNU baselines (xnu-entry only)
-        if: ${{ inputs.ram_check == 'xnu-entry' }}
+      - name: Generate XNU baselines (xnu payloads only)
+        if: ${{ inputs.ram_check != 'payload' }}
         env:
           SEED: ${{ secrets.UMI_UNIQUE_CHIP_ID }}
           KERNEL_NAME: ${{ inputs.kernel_variant == 'prelinked' && 'prelinked-kernel.macho' || (inputs.kernel_mode == 'early-trace' && 'entry-trace-kernel.macho' || 'source-kernel.macho') }}
