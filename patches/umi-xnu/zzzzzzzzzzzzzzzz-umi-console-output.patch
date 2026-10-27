@@ -1,8 +1,7 @@
 diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
 --- a/pexpert/arm/pe_init.c
 +++ b/pexpert/arm/pe_init.c
-@@ -427,6 +427,18 @@
- 		) % 4;
+@@ -428,5 +428,17 @@
  		PE_state.video.v_scale = ((boot_args_ptr->Video.v_depth >> kBootVideoDepthScaleShift) & kBootVideoDepthMask) + 1;
  		PE_state.video.v_display = boot_args_ptr->Video.v_display;
 +		/*
