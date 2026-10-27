@@ -1,8 +1,8 @@
 diff --git a/osfmk/console/serial_console.c b/osfmk/console/serial_console.c
-index e6d38d3..d98bc5c 100644
+index e6d38d3..ed9457e 100644
 --- a/osfmk/console/serial_console.c
 +++ b/osfmk/console/serial_console.c
-@@ -248,6 +248,49 @@ get_cons_ops_index(void)
+@@ -248,6 +248,136 @@ get_cons_ops_index(void)
   * @param poll Whether or not this call should poll instead of going to sleep
   *             waiting for an interrupt when the hardware device isn't ready
   */
@@ -49,105 +49,145 @@ index e6d38d3..d98bc5c 100644
 +	__asm__ volatile("dsb sy" ::: "memory");
 +}
 +
++/*
++ * umi: miniature text console on the real panel.
++ *
++ * The XNU video console cannot be used this early: gc_enable() only allocates
++ * its character buffers once vcattach() has run, which needs the display kext.
++ * So drive the pixels ourselves - 8x16 glyphs from the kernel's own iso_font,
++ * drawn into a small window mapped from the GOP base.
++ */
++#define UMI_FB_ROWBYTES 4320U
++#define UMI_FB_COLS     135U
++#define UMI_FB_ROWS     30U
++#define UMI_FB_WORDS    (UMI_FB_ROWS * 16U * (UMI_FB_ROWBYTES / 4U))
++
++volatile uint32_t *umi_fb_base;
++
++#define iso_font umi_iso_font
++#include "iso_font.c"
++#undef iso_font
++
++static unsigned int umi_fb_col;
++static unsigned int umi_fb_row;
++
++static void
++umi_fb_scroll(void)
++{
++	volatile uint32_t *fb = umi_fb_base;
++	unsigned int shift = 16U * (UMI_FB_ROWBYTES / 4U);
++	unsigned int i;
++
++	for (i = 0; i < UMI_FB_WORDS - shift; i++) {
++		fb[i] = fb[i + shift];
++	}
++	for (; i < UMI_FB_WORDS; i++) {
++		fb[i] = 0;
++	}
++}
++
++static void
++umi_fb_putc(char c)
++{
++	volatile uint32_t *fb = umi_fb_base;
++	unsigned int x, y, line, bit;
++	unsigned char bits;
++
++	if (!fb) {
++		return;
++	}
++	if (c == '\r') {
++		umi_fb_col = 0;
++		return;
++	}
++	if (c == '\n') {
++		umi_fb_col = 0;
++		if (++umi_fb_row >= UMI_FB_ROWS) {
++			umi_fb_scroll();
++			umi_fb_row = UMI_FB_ROWS - 1;
++		}
++		return;
++	}
++	if (c == '\t') {
++		umi_fb_col = (umi_fb_col + 8U) & ~7U;
++		if (umi_fb_col >= UMI_FB_COLS) {
++			umi_fb_col = UMI_FB_COLS - 1;
++		}
++		return;
++	}
++	if ((unsigned char)c < 32) {
++		return;
++	}
++	if (umi_fb_col >= UMI_FB_COLS) {
++		umi_fb_col = 0;
++		if (++umi_fb_row >= UMI_FB_ROWS) {
++			umi_fb_scroll();
++			umi_fb_row = UMI_FB_ROWS - 1;
++		}
++	}
++	x = umi_fb_col * 8U;
++	y = umi_fb_row * 16U;
++	for (line = 0; line < 16U; line++) {
++		bits = umi_iso_font[(unsigned char)c][line];
++		for (bit = 0; bit < 8U; bit++) {
++			fb[(y + line) * (UMI_FB_ROWBYTES / 4U) + x + bit] =
++			    (bits & (0x80U >> bit)) ? 0x00FFFFFFU : 0x00000000U;
++		}
++	}
++	umi_fb_col++;
++}
  static inline void
  _cnputc(char c, bool poll)
  {
-@@ -260,6 +303,7 @@ _cnputc(char c, bool poll)
+@@ -260,6 +390,7 @@ _cnputc(char c, bool poll)
  		_cnputc('\r', poll);
  	}
  
-+	umi_ramoops_putc(c);
++	umi_fb_putc(c);
  	cons_ops[idx].putc(c, poll);
  }
  
-@@ -790,3 +834,20 @@ console_serial_test(void)
- 	return KERN_SUCCESS;
- }
- #endif
-+
-+/*
-+ * umi: point the console backend back at the video console. The serial
-+ * console has no device behind it here, so every kprintf written through it
-+ * would vanish.
-+ */
-+uint32_t
-+umi_console_ops_index(void)
-+{
-+	return cons_ops_index;
-+}
-+
-+void
-+umi_force_video_console(void)
-+{
-+	cons_ops_index = VC_CONS_OPS;
-+}
 diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
-index bb7882d..0dec4d9 100644
+index bb7882d..2bdcf51 100644
 --- a/pexpert/arm/pe_init.c
 +++ b/pexpert/arm/pe_init.c
-@@ -432,6 +432,17 @@ PE_init_platform(boolean_t vm_initialized, void *args)
+@@ -432,6 +432,20 @@ PE_init_platform(boolean_t vm_initialized, void *args)
  			) % 4;
  		PE_state.video.v_scale = ((boot_args_ptr->Video.v_depth >> kBootVideoDepthScaleShift) & kBootVideoDepthMask) + 1;
  		PE_state.video.v_display = boot_args_ptr->Video.v_display;
 +		/*
-+		 * umi: DarwinBoot and UmiInheritedFbDxe both point Video at
-+		 * 0x9c000000, which is the buffer the panel actually scans out.
-+		 * Bit 0 of v_baseAddr means "physical, please map".
++		 * umi: keep PE_state.video inert but non-zero. serial_console.c paints
++		 * the panel itself, so the XNU video console must never take over: its
++		 * gc buffers are only allocated by vcattach() (display kext), and its
++		 * early paths either eat the pmap PIO range or dereference NULL. A
++		 * non-zero even v_baseAddr keeps initialize_screen() away from both
++		 * ml_io_map_unmappable() and the serial fallback.
 +		 */
-+		PE_state.video.v_baseAddr = 0x9C000001UL;
++		PE_state.video.v_baseAddr = 0x9C000000UL;
 +		PE_state.video.v_rowBytes = 4320;
 +		PE_state.video.v_width = 1080;
-+		PE_state.video.v_height = 2340;
++		PE_state.video.v_height = 480;
 +		PE_state.video.v_depth = 32;
 +		PE_state.video.v_display = 1;
  		strlcpy(PE_state.video.v_pixelFormat, "BBBBBBBBGGGGGGGGRRRRRRRR", sizeof(PE_state.video.v_pixelFormat));
  	}
  	if (!vm_initialized) {
-@@ -538,9 +549,47 @@ PE_create_console(void)
+@@ -538,6 +552,18 @@ PE_create_console(void)
  
  #if UMI_EARLY_TRACE
  	umi_early_trace(0x62, PE_state.video.v_display, umi_trace_console_address);
 +#endif
 +#if UMI_EARLY_TRACE
 +	/*
-+	 * umi: take the panel over here instead of inside initialize_screen().
-+	 * Map the GOP base ourselves and hand initialize_screen() a already-mapped
-+	 * virtual address (bit0 clear), so it never has to decide anything.
++	 * umi: map a 30-row window of the real GOP buffer (0x9c000000) and hand it
++	 * to serial_console.c, which draws 8x16 glyphs into it. Only 2 MiB, so the
++	 * pmap PIO ranges that arm_init maps next stay intact.
 +	 */
 +	{
-+		extern void umi_force_video_console(void);
-+		extern uint32_t umi_console_ops_index(void);
-+		vm_offset_t umi_fb = ml_io_map(0x9C000000UL, 0x200000UL);
-+
-+		umi_early_trace(0x64, (unsigned long)umi_fb, umi_trace_console_address);
-+		if (umi_fb) {
-+			PE_state.video.v_baseAddr = umi_fb;      /* mapped VA, bit0 clear */
-+			PE_state.video.v_rowBytes = 4320;
-+			PE_state.video.v_width = 1080;
-+			PE_state.video.v_height = 480;           /* 30 text rows inside 2 MiB */
-+			PE_state.video.v_depth = 32;
-+			PE_state.video.v_display = 1;
-+		}
-+		umi_force_video_console();
-+		umi_early_trace(0x65, (unsigned long)umi_console_ops_index(),
-+		    umi_trace_console_address);
++		extern volatile uint32_t *umi_fb_base;
++		umi_fb_base = (volatile uint32_t *)ml_io_map(0x9C000000UL, 0x200000UL);
++		umi_early_trace(0x64, (unsigned long)umi_fb_base, umi_trace_console_address);
 +	}
  #endif
  	if (PE_state.video.v_display) {
  		PE_initialize_console(&PE_state.video, kPEGraphicsMode);
-+
-+#if UMI_EARLY_TRACE
-+		/*
-+		 * umi: kPEGraphicsMode alone never enables the text console, so ask for
-+		 * text first (sets gc_desire_text) and then acquire the screen: with
-+		 * gc_desire_text set, graphics_now is FALSE and the kPEAcquireScreen arm
-+		 * ends in gc_enable(TRUE).
-+		 */
-+		PE_initialize_console(&PE_state.video, kPETextScreen);
-+		PE_initialize_console(&PE_state.video, kPEAcquireScreen);
-+		umi_early_trace(0x68, (unsigned long)umi_console_ops_index(),
-+		    umi_trace_console_address);
-+#endif
- 	} else {
- 		PE_initialize_console(&PE_state.video, kPETextMode);
- 	}
