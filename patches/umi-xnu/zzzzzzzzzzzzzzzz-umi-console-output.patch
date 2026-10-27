@@ -1,24 +1,3 @@
-diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
---- a/pexpert/arm/pe_init.c
-+++ b/pexpert/arm/pe_init.c
-@@ -428,5 +428,17 @@
- 		PE_state.video.v_scale = ((boot_args_ptr->Video.v_depth >> kBootVideoDepthScaleShift) & kBootVideoDepthMask) + 1;
- 		PE_state.video.v_display = boot_args_ptr->Video.v_display;
-+		/*
-+		 * umi: DarwinBoot and UmiInheritedFbDxe both point Video at
-+		 * 0x9c000000, which is the buffer the panel actually scans out.
-+		 * Bit 0 of v_baseAddr is Darwin's "physical, please map" flag:
-+		 * initialize_screen() only maps when it is set. Geometry is forced
-+		 */
-+		PE_state.video.v_baseAddr = 0x9C000001UL; /* bit0: physical, map it */
-+		PE_state.video.v_rowBytes = 4320;
-+		PE_state.video.v_width = 1080;
-+		PE_state.video.v_height = 2340;
-+		PE_state.video.v_depth = 32;
-+		PE_state.video.v_display = 1;
- 		strlcpy(PE_state.video.v_pixelFormat, "BBBBBBBBGGGGGGGGRRRRRRRR", sizeof(PE_state.video.v_pixelFormat));
- 	}
- 	if (!vm_initialized) {
 diff --git a/osfmk/console/serial_console.c b/osfmk/console/serial_console.c
 index e6d38d3..b6a4772 100644
 --- a/osfmk/console/serial_console.c
@@ -82,3 +61,63 @@ index e6d38d3..b6a4772 100644
  	cons_ops[idx].putc(c, poll);
  }
  
+diff --git a/pexpert/arm/pe_init.c b/pexpert/arm/pe_init.c
+index 433b6cd..c25cec1 100644
+--- a/pexpert/arm/pe_init.c
++++ b/pexpert/arm/pe_init.c
+@@ -427,6 +427,18 @@ PE_init_platform(boolean_t vm_initialized, void *args)
+ 			) % 4;
+ 		PE_state.video.v_scale = ((boot_args_ptr->Video.v_depth >> kBootVideoDepthScaleShift) & kBootVideoDepthMask) + 1;
+ 		PE_state.video.v_display = boot_args_ptr->Video.v_display;
++		/*
++		 * umi: DarwinBoot and UmiInheritedFbDxe both point Video at
++		 * 0x9c000000, which is the buffer the panel actually scans out.
++		 * Bit 0 of v_baseAddr is Darwin's "physical, please map" flag:
++		 * initialize_screen() only maps the buffer when it is set.
++		 */
++		PE_state.video.v_baseAddr = 0x9C000001UL; /* bit0: physical, map it */
++		PE_state.video.v_rowBytes = 4320;
++		PE_state.video.v_width = 1080;
++		PE_state.video.v_height = 2340;
++		PE_state.video.v_depth = 32;
++		PE_state.video.v_display = 1;
+ 		strlcpy(PE_state.video.v_pixelFormat, "BBBBBBBBGGGGGGGGRRRRRRRR", sizeof(PE_state.video.v_pixelFormat));
+ 	}
+ 	if (!vm_initialized) {
+@@ -525,6 +537,36 @@ PE_create_console(void)
+ 	 */
+ 	check_for_panic_log();
+ 
++#if UMI_EARLY_TRACE
++	/*
++	 * umi diagnostic: map both candidate framebuffer bases and paint one
++	 * strip in each, so the panel itself tells us which buffer is scanned
++	 * out. 0x9C000000 is what UmiInheritedFbDxe installs as the GOP and what
++	 * the UEFI console text lands in; 0x90000000 is the alternative.
++	 */
++	{
++		volatile uint32_t *umi_fb_a = (volatile uint32_t *)ml_io_map(0x9C000000UL, 0x3000);
++		volatile uint32_t *umi_fb_b = (volatile uint32_t *)ml_io_map(0x90000000UL, 0x3000);
++		unsigned int umi_i;
++
++		umi_early_trace(0x64, (unsigned long)umi_fb_a, umi_trace_console_address);
++		umi_early_trace(0x65, (unsigned long)umi_fb_b, umi_trace_console_address);
++		if (umi_fb_a) {
++			umi_early_trace(0x66, (unsigned long)umi_fb_a[0], umi_trace_console_address);
++			for (umi_i = 0; umi_i < 0xC00; umi_i++) {
++				umi_fb_a[umi_i] = 0x00FF00FFUL;         /* magenta strip */
++			}
++		}
++		if (umi_fb_b) {
++			umi_early_trace(0x67, (unsigned long)umi_fb_b[0], umi_trace_console_address);
++			for (umi_i = 0; umi_i < 0xC00; umi_i++) {
++				umi_fb_b[umi_i] = 0x0000FF00UL;         /* green strip */
++			}
++		}
++		__asm__ volatile("dsb sy" ::: "memory");
++	}
++#endif
++
+ 	if (PE_state.video.v_display) {
+ 		PE_initialize_console(&PE_state.video, kPEGraphicsMode);
+ 	} else {
