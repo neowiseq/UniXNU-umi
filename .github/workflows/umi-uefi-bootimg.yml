@@ -134,7 +134,14 @@ jobs:
           if [ "${{ inputs.kernel_variant }}" = "prelinked" ]; then
             ARGS="$ARGS --crypto-bootstrap prelinked"
           fi
-          python tools/build_umi_xnu.py $ARGS
+          python tools/build_umi_xnu.py $ARGS || {
+            echo "== build failed, error lines from the kernel log =="
+            for f in out/umi-xnu/umi/logs/*/*.log; do
+              echo "--- $f"
+              grep -n -i -B2 -A6 "error:" "$f" | head -80 || true
+            done
+            exit 1
+          }
 
       - name: Fetch pinned donor components (prelinked only)
         if: ${{ inputs.kernel_variant == 'prelinked' }}
