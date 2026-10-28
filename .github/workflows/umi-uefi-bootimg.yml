@@ -262,6 +262,7 @@ jobs:
       - name: Build UEFI firmware + boot image
         env:
           UMI_ALLOW_UNQUALIFIED_PRELINK: ${{ inputs.prelink_unqualified && '1' || '0' }}
+          UMI_PAYLOAD_BOOT_ARGS: ${{ inputs.native_ufs && 'native-ufs-root=1 native-ufs-diagnostics=1' || (inputs.ufs_probe && 'umi-ufs-probe=2' || '') }}
         run: |
           python tools/build_umi_uefi.py \
             --firmware local-inputs \

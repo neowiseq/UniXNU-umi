@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -128,6 +129,9 @@ def stage_payload_profile(uefi, profile):
 
 
 def stage_darwinboot(uefi, package):
+    # The menu request carries no boot arguments; this is the only channel
+    # that reaches XNU's PE_parse_boot_argn on this payload.
+    boot_args = os.environ.get("UMI_PAYLOAD_BOOT_ARGS", "umi-ufs-probe=2")
     """Stage the pinned loader with ramoops checkpoints in the private package."""
     source = ROOT / "sources/UniXNU/drivers/DarwinBoot/DarwinBootPkg"
     target = package / "DarwinBootPkg"
@@ -188,7 +192,7 @@ def stage_darwinboot(uefi, package):
         raise ValueError("unexpected DarwinBoot command line anchor")
     text = text.replace(anchor, (
         "  {\n"
-        "    CONST CHAR8 *UmiArgs = \"umi-ufs-probe=2\";\n"
+        f"    CONST CHAR8 *UmiArgs = \"{boot_args}\";\n"
         "    UINTN        UmiLength;\n"
         "    for (UmiLength = 0; CommandLine[UmiLength] != 0; UmiLength++) { }\n"
         "    if (UmiLength != 0) { CommandLine[UmiLength++] = ' '; }\n"

@@ -99,8 +99,9 @@ bool NativeUfs::start(IOService *provider)
         needle=f"  native_ufs_root_step = {step};\n"
         root=root.replace(needle,needle+"  umi_native_ufs_checkpoint();\n")
     needle="  native_ufs_root_step = 3;\n"
-    root=root.replace(needle,needle+'''  if (layout->userdataFirst!=0x2c0000 || layout->userdataLast!=0x3b51ffa) {
-    rootDiagnosticFailure("userdata differs from umi baseline");
+    root=root.replace(needle,needle+'''  if (!layout->userdataLast || layout->userdataLast<=layout->userdataFirst ||
+      layout->userdataFirst<0x1000) {
+    rootDiagnosticFailure("userdata extent invalid");
     IOFree(layout,sizeof(RootLayout));
     return false;
   }
@@ -127,7 +128,15 @@ bool NativeUfs::start(IOService *provider)
     shutil.copyfile(UP/"drivers/NativeUfs/LICENSE",OUT/"LICENSE")
     rec=TREE/"build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json"
     record=json.loads(rec.read_text().strip().rstrip(","))
+    # IOKit storage headers are exported into the object tree and are not part
+    # of the IOPlatformExpert recipe; add only the directories that exist.
+    storage_includes=[]
+    for candidate in (TREE/".cache/xnu-work/iokit",
+                      TREE/"build/xnu/ios-obj/EXPORT_HDRS",
+                      TREE/"build/xnu/ios-obj/EXPORT_HDRS/IOKit"):
+        if candidate.is_dir(): storage_includes+=["-I",str(candidate)]
     compile_from(record,generated,OUT/"NativeUfs.o",[
+        *storage_includes,
         "-I",str(ROOT/"out/umi/storage-abi/include"),
         "-I",str(TREE/".cache/xnu-work/osfmk"),
         "-I",str(UP/"kits/VerifiedRoot/include"),
