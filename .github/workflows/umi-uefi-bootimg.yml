@@ -206,6 +206,25 @@ jobs:
           python tools/build_umi_prelink.py --profile phone $EXTRA \
             --output out/umi-xnu/umi/kernel/prelinked-kernel.macho
 
+      - name: Build minimal APFS root volume (link proof)
+        if: ${{ inputs.native_ufs }}
+        run: |
+          set -e
+          mkdir -p out/umi/root
+          rm -rf /tmp/minroot /tmp/minroot.sparseimage
+          hdiutil create -size 480m -fs APFS -volname System -type SPARSE -o /tmp/minroot -quiet
+          hdiutil attach /tmp/minroot.sparseimage -nobrowse -quiet
+          mkdir -p "/Volumes/System/System/Library/CoreServices" "/Volumes/System/sbin" "/Volumes/System/private/var/tmp"
+          printf 'umi minimal root link proof\n' > "/Volumes/System/System/Library/CoreServices/SystemVersion.txt"
+          UUID=$(diskutil info -plist "/Volumes/System" | /usr/libexec/PlistBuddy -c 'Print :VolumeUUID' /dev/stdin)
+          echo "volume uuid: $UUID"
+          printf '%s' "$UUID" > out/umi/root/volume-uuid.txt
+          sync
+          hdiutil detach "/Volumes/System" -quiet
+          hdiutil convert /tmp/minroot.sparseimage -format UDRW -o out/umi/root/minimal-apfs.dmg -quiet
+          gzip -9 out/umi/root/minimal-apfs.dmg
+          ls -l out/umi/root/
+
       - name: Generate XNU baselines (xnu payloads only)
         if: ${{ inputs.ram_check != 'payload' }}
         env:
@@ -218,7 +237,8 @@ jobs:
           python devices/umi/scripts/make-umi-adt.py --output out/umi/adt/umi.adt \
             --dram-size 0x1FBB00000 --owned-memory-size 0x10000000 \
             --cpu-regs 0,0x100,0x200,0x300,0x400,0x500,0x600,0x700 \
-            --psci-method smc $IDENTITY_ARG
+            --psci-method smc $IDENTITY_ARG \
+            $([ -f out/umi/root/volume-uuid.txt ] && echo "--root-match-volume-uuid $(cat out/umi/root/volume-uuid.txt)")
           python - <<'PY'
           import json, hashlib
           from pathlib import Path
@@ -261,6 +281,8 @@ jobs:
           path: |
             out/umi/boot/umi-uefi-menu.img
             out/umi/boot/boot.json
+            out/umi/root/minimal-apfs.dmg.gz
+            out/umi/root/volume-uuid.txt
           if-no-files-found: warn
           retention-days: 7
 
