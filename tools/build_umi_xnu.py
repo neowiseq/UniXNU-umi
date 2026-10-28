@@ -264,9 +264,12 @@ def main():
     if args.stage in ("all", "bootstrap"):
         # This pass supplies compile records and symbol tables for the real providers.
         # It is not a runnable kernel and is never packaged as a payload.
+        # The compile-record pass never links a provider archive, so every
+        # option whose call site only resolves in the real pass is off here too.
         run("bootstrap", build, {k: "0" for k in (
             "XNU_SOURCE_CORECRYPTO14", "XNU_SOURCE_PTHREAD", "XNU_ARM_DT_PLATFORM",
-            "XNU_ARMCPU", "XNU_NATIVE_ARCH_TIMER", "XNU_BOOT_PROGRESS")})
+            "XNU_ARMCPU", "XNU_NATIVE_ARCH_TIMER", "XNU_BOOT_PROGRESS",
+            "UMI_UFS_PROBE", "UMI_PMGR")})
     if args.stage in ("all", "libraries"):
         run("corecrypto-plain", ["python3", "scripts/build-corecrypto-14.py"])
         run("corecrypto-namespace", ["python3", "scripts/build-corecrypto-14.py", "--namespace"])
