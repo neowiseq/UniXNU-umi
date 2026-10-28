@@ -130,7 +130,7 @@ def main():
     if args.ufs_probe:
         settings["XNU_EXTRA_LD_ARCHIVES"] = (
             settings.get("XNU_EXTRA_LD_ARCHIVES", "") + " " +
-            str(ctx.tree / "build/umi-ufs-probe/libUmiUfsProbe.a")).strip()
+            "-Wl,-force_load," + str(ctx.tree / "build/umi-ufs-probe/libUmiUfsProbe.a")).strip()
     settings["XNU_NATIVE_UFS"] = str(int(args.native_ufs))
     settings["XNU_VERIFIED_ROOT_PROBE"] = str(int(args.native_ufs))
     if args.native_ufs:
