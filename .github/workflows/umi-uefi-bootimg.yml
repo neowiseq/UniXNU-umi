@@ -29,6 +29,10 @@ on:
         description: "prelinked only: structural audit without the upstream QEMU qualification receipts"
         default: false
         type: boolean
+      ufs_probe:
+        description: "prelinked only: compile the UFS transport probe (inspect, never mount)"
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -133,6 +137,9 @@ jobs:
           fi
           if [ "${{ inputs.kernel_variant }}" = "prelinked" ]; then
             ARGS="$ARGS --crypto-bootstrap prelinked"
+          fi
+          if [ "${{ inputs.ufs_probe }}" = "true" ]; then
+            ARGS="$ARGS --ufs-probe"
           fi
           python tools/build_umi_xnu.py $ARGS || {
             echo "== build failed, error lines from the kernel log =="
