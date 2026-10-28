@@ -33,6 +33,10 @@ on:
         description: "prelinked only: compile the UFS transport probe (inspect, never mount)"
         default: false
         type: boolean
+      native_ufs:
+        description: "prelinked only: publish the real UFS block media so BSD can find a root"
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -156,6 +160,9 @@ jobs:
           fi
           if [ "${{ inputs.ufs_probe }}" = "true" ]; then
             ARGS="$ARGS --ufs-probe"
+          fi
+          if [ "${{ inputs.native_ufs }}" = "true" ]; then
+            ARGS="$ARGS --native-ufs"
           fi
           fail() {
             echo "== build failed, error lines from the kernel log =="

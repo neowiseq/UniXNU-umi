@@ -153,9 +153,12 @@ static void umiReadDisk()
   if(!findRootLayout(&layout,&why)) { umiReadStep(14,kIOReturnBadMedia,why); return; }
   umi_ufs_read[23]=layout.gptHeaderCrc;
   umi_ufs_read[24]=layout.gptEntriesCrc;
-  // Cross-check the exact Android-collected partition bounds.
-  if(layout.userdataFirst!=0x2c0000 || layout.userdataLast!=0x3b51ffa) {
-    umiReadStep(14,kIOReturnBadMedia,"userdata differs from phone baseline"); return;
+  // The absolute bounds were collected on the bring-up unit; another unit of the
+  // same model can carry a different userdata extent. Record what this device
+  // reports (umi_ufs_read[21]/[22]) and only reject an impossible extent.
+  if(!layout.userdataLast || layout.userdataLast<=layout.userdataFirst ||
+     layout.userdataFirst<0x1000) {
+    umiReadStep(14,kIOReturnBadMedia,"userdata extent invalid"); return;
   }
   umiReadStep(15,kIOReturnSuccess,"GPT verified");
   IOLog("UMI UFS: real LUN0 read; GPT CRC valid; userdata=%llx..%llx manifest=%u windows=%u\n",
