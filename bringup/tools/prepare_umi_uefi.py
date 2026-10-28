@@ -181,6 +181,22 @@ def stage_darwinboot(uefi, package):
     text = text.replace(anchor,
         '  DEBUG ((DEBUG_ERROR, "UMI DARWINBOOT: ramdisk encoded=%lu logical=%lu packed=%u keep=%u reserved=%lu\\n", (UINT64)Request->RamdiskSize, (UINT64)RamdiskExpandedSize, (UINT32)RamdiskPacked, (UINT32)KeepPacked, (UINT64)RamdiskBytes));\n'
         + anchor, 1)
+    # The menu request carries no boot arguments, and the read-only UFS
+    # inspection is gated on one; append it so the probe can actually run.
+    anchor = "  CopyMem (Args->CommandLine, CommandLine, sizeof (CommandLine));"
+    if text.count(anchor) != 1:
+        raise ValueError("unexpected DarwinBoot command line anchor")
+    text = text.replace(anchor, (
+        "  {\n"
+        "    CONST CHAR8 *UmiArgs = \"umi-ufs-probe=1\";\n"
+        "    UINTN        UmiLength;\n"
+        "    for (UmiLength = 0; CommandLine[UmiLength] != 0; UmiLength++) { }\n"
+        "    if (UmiLength != 0) { CommandLine[UmiLength++] = ' '; }\n"
+        "    for (Index = 0; (UmiArgs[Index] != 0) && (UmiLength < sizeof (CommandLine) - 1); Index++) {\n"
+        "      CommandLine[UmiLength++] = UmiArgs[Index];\n"
+        "    }\n"
+        "    CommandLine[UmiLength] = 0;\n"
+        "  }\n") + anchor, 1)
     # Entry.S draws this bar before branching to XNU, not inside XNU.
     text = text.replace("means the kernel entry code ran.", "means the loader trampoline ran, not proof of XNU entry.")
     # APRIORI runs before BDS connects ConOut. Print() asserts on NULL ConOut;
