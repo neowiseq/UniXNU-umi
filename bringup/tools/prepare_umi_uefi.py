@@ -188,7 +188,7 @@ def stage_darwinboot(uefi, package):
         raise ValueError("unexpected DarwinBoot command line anchor")
     text = text.replace(anchor, (
         "  {\n"
-        "    CONST CHAR8 *UmiArgs = \"umi-ufs-probe=1\";\n"
+        "    CONST CHAR8 *UmiArgs = \"umi-ufs-probe=2\";\n"
         "    UINTN        UmiLength;\n"
         "    for (UmiLength = 0; CommandLine[UmiLength] != 0; UmiLength++) { }\n"
         "    if (UmiLength != 0) { CommandLine[UmiLength++] = ' '; }\n"
