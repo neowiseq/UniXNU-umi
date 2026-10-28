@@ -269,7 +269,9 @@ def main():
         run("bootstrap", build, {k: "0" for k in (
             "XNU_SOURCE_CORECRYPTO14", "XNU_SOURCE_PTHREAD", "XNU_ARM_DT_PLATFORM",
             "XNU_ARMCPU", "XNU_NATIVE_ARCH_TIMER", "XNU_BOOT_PROGRESS",
-            "UMI_UFS_PROBE", "UMI_PMGR")})
+            "UMI_UFS_PROBE", "UMI_PMGR",
+            "XNU_NATIVE_UFS", "XNU_VERIFIED_ROOT_PROBE", "XNU_OWNER_ROOT_AUDIT",
+            "XNU_OWNER_ROOT_TRUST", "XNU_TRUST_CACHE_RUNTIME")})
     if args.stage in ("all", "libraries"):
         run("corecrypto-plain", ["python3", "scripts/build-corecrypto-14.py"])
         run("corecrypto-namespace", ["python3", "scripts/build-corecrypto-14.py", "--namespace"])
