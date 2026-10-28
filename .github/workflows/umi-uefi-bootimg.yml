@@ -157,7 +157,7 @@ jobs:
           if [ "${{ inputs.ufs_probe }}" = "true" ]; then
             ARGS="$ARGS --ufs-probe"
           fi
-          python tools/build_umi_xnu.py $ARGS || {
+          fail() {
             echo "== build failed, error lines from the kernel log =="
             for f in out/umi-xnu/umi/logs/*/*.log; do
               echo "--- $f"
@@ -165,6 +165,14 @@ jobs:
             done
             exit 1
           }
+          if [ "${{ inputs.ufs_probe }}" = "true" ]; then
+            echo "== pass 1: compile objects so the provider compile recipe exists (the link is expected to fail)"
+            python tools/build_umi_xnu.py $ARGS || true
+            echo "== build the UFS probe archive from the recorded recipe"
+            ( cd out/umi-xnu/umi/tree && UMI_UFS_PROBE=1 UMI_EARLY_TRACE=1 python3 scripts/build-umi-ufs-probe.py ) || fail
+            echo "== pass 2: relink with libUmiUfsProbe.a"
+          fi
+          python tools/build_umi_xnu.py $ARGS || fail
 
       - name: Fetch pinned donor components (prelinked only)
         if: ${{ inputs.kernel_variant == 'prelinked' }}
