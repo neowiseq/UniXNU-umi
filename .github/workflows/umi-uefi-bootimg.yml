@@ -56,13 +56,29 @@ jobs:
           path: sources/UniXNU
           submodules: recursive
 
-      - name: Checkout pinned uefi-umi (with submodules)
+      - name: Checkout pinned uefi-umi
         uses: actions/checkout@v4
         with:
           repository: reAAAq/uefi-umi
           ref: 48bc41218c480519bfd299c22205f44e418df9d0
           path: sources/uefi-umi
-          submodules: recursive
+          submodules: false
+
+      - name: Sync uefi-umi submodules (retried)
+        run: |
+          cd sources/uefi-umi
+          for attempt in 1 2 3 4; do
+            if git submodule sync --recursive >/dev/null 2>&1 && \
+               git submodule update --init --recursive --depth 1; then
+              echo "submodules ready on attempt $attempt"
+              exit 0
+            fi
+            echo "submodule sync attempt $attempt failed, retrying"
+            git submodule deinit -f --all >/dev/null 2>&1 || true
+            sleep 20
+          done
+          echo "submodules still incomplete after retries"
+          exit 1
 
       - name: Select Xcode
         run: |
